@@ -6,7 +6,7 @@ import os
 import sqlite_utils
 import time
 import json
-from github_to_sqlite import utils
+from github_to_sqlite import gitgraph, utils
 
 
 @click.group()
@@ -464,6 +464,70 @@ def scrape_dependents(db_path, repos, auth, verbose):
                     {
                         "repo": repo_full["id"],
                         "dependent": dependent_id,
+                        "first_seen_utc": datetime.datetime.utcnow().isoformat(),
+                    },
+                    pk=("repo", "dependent"),
+                    foreign_keys=(
+                        ("repo", "repos", "id"),
+                        ("dependent", "repos", "id"),
+                    ),
+                )
+
+    utils.ensure_db_shape(db)
+
+@cli.command(name="dependencies")
+@click.argument(
+    "db_path",
+    type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
+    required=True,
+)
+@click.argument("depth", type=int, nargs=1)
+@click.option(
+    "-d",
+    "--depth",
+    default=1,
+    help="Depth of search",
+)
+@click.argument("repos", type=str, nargs=-1)
+@click.option(
+    "-a",
+    "--auth",
+    type=click.Path(file_okay=True, dir_okay=False, allow_dash=True),
+    default="auth.json",
+    help="Path to auth.json token file",
+)
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help="Verbose output",
+)
+def dependencies(db_path, repos, auth, depth,verbose):
+    db = sqlite_utils.Database(db_path)
+    token = load_token(auth)
+    git = gitgraph.GithubGraph(token)
+
+    for repo in repos:
+        repo_full = utils.fetch_repo(repo, token)
+        utils.save_repo(db, repo_full)
+
+        owner, name = repo.split('/')
+
+        for source, target in git.getDependencies(owner, name, depth, verbose):
+
+            source_id = utils.getRepoID(source, db, token)
+            target_id = utils.getRepoID(target, db, token)
+            
+            # Only insert if it isn't already there:
+            if not db["dependents"].exists() or not list(
+                db["dependents"].rows_where(
+                    "repo = ? and dependent = ?", [target_id, source_id]
+                )
+            ):
+                db["dependents"].insert(
+                    {
+                        "repo": target_id,
+                        "dependent": source_id,
                         "first_seen_utc": datetime.datetime.utcnow().isoformat(),
                     },
                     pk=("repo", "dependent"),

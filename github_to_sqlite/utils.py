@@ -290,6 +290,7 @@ def fetch_repo(full_name, token=None):
     headers = make_headers(token)
     # Get topics:
     headers["Accept"] = "application/vnd.github.mercy-preview+json"
+    print(full_name)
     owner, slug = full_name.split("/")
     url = "https://api.github.com/repos/{}/{}".format(owner, slug)
     response = requests.get(url, headers=headers)
@@ -878,3 +879,16 @@ def save_workflow(db, repo_id, filename, content):
             pk="id",
             foreign_keys=["job", "repo"],
         )
+
+def getRepoID(repo_name, db, token):
+    existing = list(db["repos"].rows_where("full_name = ?", [repo_name]))
+    dependencie_id = None
+    if not existing:
+        dependencie_full = fetch_repo(repo_name, token)
+        time.sleep(1)
+        save_repo(db, dependencie_full)
+        dependencie_id = dependencie_full["id"]
+    else:
+        dependencie_id = existing[0]["id"]
+    
+    return dependencie_id
