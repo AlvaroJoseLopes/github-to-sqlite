@@ -58,19 +58,19 @@ class GithubGraph:
 
 				seen.add(dependencie['packageName'])
 
-				target = '{}/{}'.format(
+				source = '{}/{}'.format(
 					dependencie['repository']['owner']['login'],
 					dependencie['repository']['name']
 				)
 
-				source = f'{owner}/{name}'
+				target = f'{owner}/{name}'
 				if verbose:
-					print(f'repo(target): {target} - dependent(source) = {source}')
+					print(f'repo(source): {source} -> dependent(target) = {target}')
 				yield source, target
 
 				if ((len(self.neighbors) + 1 < depth or depth == 0) and dependencie['hasDependencies'] == True):
-					if target not in self.neighbors:
-						self.neighbors.append(target)
+					if source not in self.neighbors:
+						self.neighbors.append(source)
 						yield from self.getDependencies(
 							dependencie['repository']['owner']['login'],
 							dependencie['repository']['name'],

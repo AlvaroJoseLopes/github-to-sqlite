@@ -507,7 +507,10 @@ def dependencies(db_path, repos, auth, depth,verbose):
     token = load_token(auth)
     git = gitgraph.GithubGraph(token)
 
+    print(repos)
     for repo in repos:
+        print(f'Getting dependencies of {repo} repository')
+
         repo_full = utils.fetch_repo(repo, token)
         utils.save_repo(db, repo_full)
 
@@ -521,7 +524,7 @@ def dependencies(db_path, repos, auth, depth,verbose):
             # Only insert if it isn't already there:
             if not db["dependents"].exists() or not list(
                 db["dependents"].rows_where(
-                    "repo = ? and dependent = ?", [target_id, source_id]
+                    "repo = ? and dependent = ?", [source_id, target_id]
                 )
             ):
                 db["dependents"].insert(
