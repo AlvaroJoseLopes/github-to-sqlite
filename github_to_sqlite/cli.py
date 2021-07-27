@@ -517,7 +517,6 @@ def dependencies(db_path, repos, auth, depth,verbose):
         owner, name = repo.split('/')
 
         for source, target in git.getDependencies(owner, name, depth, verbose):
-
             source_id = utils.getRepoID(source, db, token)
             target_id = utils.getRepoID(target, db, token)
             
@@ -529,8 +528,8 @@ def dependencies(db_path, repos, auth, depth,verbose):
             ):
                 db["dependents"].insert(
                     {
-                        "repo": target_id,
-                        "dependent": source_id,
+                        "repo": source_id,
+                        "dependent": target_id,
                         "first_seen_utc": datetime.datetime.utcnow().isoformat(),
                     },
                     pk=("repo", "dependent"),

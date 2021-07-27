@@ -10,3 +10,4 @@ venv
 *.egg-info
 auth.json
 teste.py
+teste/
